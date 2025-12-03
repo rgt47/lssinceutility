@@ -12,7 +12,7 @@ tags:
   - research-computing
   - fzf-integration
 description: "Discover how ls_since.sh simplifies date-based file filtering with interactive modes, flexible timestamp selection, and seamless fzf integration—a modern solution for research computing workflows."
-image: "media/ls_since_hero.png"
+image: "media/images/ls_since_hero.png"
 document-type: "blog"
 draft: false
 execute:
@@ -76,7 +76,7 @@ Standard Unix utilities have significant limitations for this task:
 | `stat` | Detailed information | Requires per-file examination |
 | Date comparisons | Flexible | Error-prone and platform-specific |
 
-![Streamlined file discovery workflow](media/ls_since_hero.png){.img-fluid width="50%"}
+![Streamlined file discovery workflow](media/images/ls_since_hero.png){.img-fluid}
 
 ---
 
@@ -262,7 +262,7 @@ ls_since.sh -T atime -s 15nov2025 ~/logs
 # Shows files accessed in the last 17 days
 ```
 
-![Interactive exploration in action](media/flat-workspace-office-concept.png){.img-fluid width="50%"}
+![Interactive exploration in action](media/images/flat-workspace-office-concept.png){.img-fluid}
 
 ---
 
@@ -549,7 +549,7 @@ ls_since.sh -p -T mtime -s 01nov2025 -t md | xargs vim
 ls_since.sh -h
 ```
 
-![Ready to explore your file system](media/technology-unicorn-venture-workspace-with-pc-used-conduct-code-reviews.jpg){.img-fluid width="50%"}
+![Ready to explore your file system](media/images/technology-unicorn-venture-workspace-with-pc-used-conduct-code-reviews.jpg){.img-fluid}
 
 ---
 
