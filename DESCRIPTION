@@ -1,0 +1,15 @@
+Package: ls_since_blog
+Title: Blog Post - ls_since.sh Utility
+Version: 0.0.1
+Author: Your Name
+Maintainer: Your Name <your.email@example.com>
+Description: Reproducible blog post about ls_since.sh, an advanced file date filtering utility for research computing.
+License: GPL-3
+Depends:
+    R (>= 4.0.0)
+Suggests:
+    testthat (>= 3.0.0),
+    rmarkdown,
+    quarto
+Encoding: UTF-8
+LazyData: true

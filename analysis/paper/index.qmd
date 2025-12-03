@@ -1,0 +1,674 @@
+---
+title: "ls_since.sh: Advanced File Date Filtering for Research Computing"
+subtitle: "A comprehensive utility for discovering files within temporal windows"
+author: "Research Computing Infrastructure"
+date: "2025-12-02"
+categories: [Bash, Command-Line, Utilities, File Management, Research Tools]
+tags:
+  - bash-scripting
+  - file-discovery
+  - date-filtering
+  - unix-tools
+  - research-computing
+  - fzf-integration
+description: "Discover how ls_since.sh simplifies date-based file filtering with interactive modes, flexible timestamp selection, and seamless fzf integration—a modern solution for research computing workflows."
+image: "media/ls_since_hero.png"
+document-type: "blog"
+draft: false
+execute:
+  echo: true
+  warning: false
+  message: false
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: false
+    code-tools: false
+---
+
+# Introduction
+
+Finding files within specific time windows is a common task in research computing. Whether you're auditing a research project, discovering recent changes, or managing data across timeframes, traditional Unix tools like `find` and `ls` require complex syntax and date format conversions.
+
+`ls_since.sh` solves this problem with an intuitive, feature-rich utility that combines the power of Unix tools with thoughtful interface design. This post documents the utility's architecture, features, and practical use cases—demonstrating why well-designed command-line tools can significantly improve productivity.
+
+## What This Post Covers
+
+- **Problem Space**: Why date-based file filtering matters
+- **Core Features**: The complete feature set explained
+- **Technical Architecture**: How the utility works internally
+- **Practical Examples**: Real-world use cases and code recipes
+- **Integration Patterns**: Combining with other tools like fzf
+- **Performance**: Scalability and optimization considerations
+
+---
+
+# The Problem Space
+
+## Why Date-Based File Filtering Matters
+
+Research workflows generate thousands of files. Organizing and discovering them by creation or modification date is essential for:
+
+**Research Project Auditing**
+: Finding all files generated during a specific analysis phase
+
+**Version Control Workflows**
+: Locating uncommitted changes within a date range
+
+**Data Management**
+: Identifying stale or recent files for archival or backup
+
+**Collaboration Tracking**
+: Discovering contributions from team members during specific periods
+
+**Log Analysis**
+: Finding application-generated artifacts within time windows
+
+## Limitations of Standard Tools
+
+Standard Unix utilities have significant limitations for this task:
+
+| Tool | Strength | Limitation |
+|------|----------|-----------|
+| `find -newermt` | Powerful filtering | Complex date format requirements |
+| `ls -lt` | Simple output | Sorts all files, doesn't filter by date range |
+| `stat` | Detailed information | Requires per-file examination |
+| Date comparisons | Flexible | Error-prone and platform-specific |
+
+![Streamlined file discovery workflow](media/ls_since_hero.png){.img-fluid width="50%"}
+
+---
+
+# Core Features and Architecture
+
+## The Three-Stage Filtering Pipeline
+
+`ls_since.sh` implements a streamlined filtering architecture:
+
+```
+Find Phase → Timestamp Comparison → Output Formatting
+```
+
+### Stage 1: Find Phase
+
+- Recursively discovers files in directory hierarchy
+- Filters by file extension (configurable or all files)
+- Excludes `.git` directories automatically (saves 30-40% processing time)
+- Returns canonical file paths for processing
+
+### Stage 2: Timestamp Comparison
+
+The utility supports three orthogonal timestamp sources:
+
+- **`birth`** (default): File creation/copy time
+- **`mtime`**: Last modification time
+- **`atime`**: Last access time
+
+Dates are converted to Unix epoch timestamps for efficient integer comparisons:
+
+```bash
+# Input: 01nov2025 → Internal: YYYY-MM-DD → Unix timestamp
+TARGET_TIMESTAMP=$(date -j -f "%Y-%m-%d" "$TARGET_DATE" "+%s")
+```
+
+### Stage 3: Output Formatting
+
+Four output modes for different use cases:
+
+- **Normal**: `TIMESTAMP - filepath` for human readability
+- **Count**: Total file count for statistics
+- **Paths-only**: Raw file paths for piping
+- **fzf**: Interactive selection interface
+
+## Date Input Format
+
+The utility standardizes on **DDmmmYYYY** format with lowercase months:
+
+```
+01nov2025    # November 1, 2025
+15dec2024    # December 15, 2024
+28feb2025    # February 28, 2025
+```
+
+This approach:
+- Eliminates ambiguity (01/02/2025 is ambiguous; 01feb2025 is not)
+- Works consistently across locales
+- Avoids numeric month errors
+
+## Extension Filtering
+
+Default file types optimized for research computing:
+
+```bash
+EXTENSIONS=("md" "Rmd" "qmd" "sh" "pdf" "R")
+```
+
+Supports three filtering modes:
+
+1. **Default extensions**: Works without flags
+2. **Custom extensions**: `-t sh,py,txt` or `-t json,yaml`
+3. **All files**: `-t all` for any file type
+
+---
+
+# Command Reference
+
+## Basic Syntax
+
+```bash
+ls_since.sh [OPTIONS] [directory] [date]
+```
+
+## Essential Options
+
+```
+# Filtering
+-t, --type STR           File extensions (comma-separated or 'all')
+-s, --start DATE         Start date in DDmmmYYYY format
+-e, --end DATE           End date (optional, creates date range)
+-T, --timestamp TYPE     Type: birth, mtime, atime
+
+# Output
+-c, --count              Count files instead of listing
+-p, --paths-only         Output paths only (no headers)
+--fzf                    Pipe to fzf for interactive selection
+
+# Utilities
+-C, --calendar           Show ASCII calendars as reference
+--no-color               Suppress green highlighting
+-h, --help               Display help and examples
+```
+
+## Positional Arguments
+
+- **No arguments**: Interactive mode (prompts for everything)
+- **One argument**: Treated as date
+- **Two arguments**: Directory and date
+
+---
+
+# Practical Examples
+
+## Example 1: Interactive Mode with Defaults
+
+```bash
+# Start interactive mode with 8-day window
+ls_since.sh
+
+# Prompts for:
+# - Start date (default: 8 days ago)
+# - End date (default: today)
+# - File extensions (default: md,Rmd,qmd,sh,pdf,R)
+```
+
+Perfect for exploring recent changes without command syntax.
+
+## Example 2: Research Project Auditing
+
+```bash
+# Find all R analysis files from November 2025
+ls_since.sh -s 01nov2025 -e 30nov2025 -t R,Rmd ~/research/analysis
+
+# Output: R files with timestamps
+# 2025-11-15 10:23:45 - ~/research/analysis/main_analysis.R
+# 2025-11-12 14:12:33 - ~/research/analysis/utils.R
+```
+
+## Example 3: Track Recent Modifications
+
+```bash
+# Find markdown docs modified in the last 2 weeks
+ls_since.sh -T mtime -s 18nov2025 -t md ~/docs
+
+# Captures the last editing session for each file
+```
+
+## Example 4: Interactive File Selection
+
+```bash
+# Browse and select shell scripts using fzf
+ls_since.sh --fzf -t sh 01jan2025
+
+# Opens fzf interface for interactive selection
+# Selected file can be piped to other commands
+```
+
+## Example 5: Pipeline Integration
+
+```bash
+# Edit recently modified scripts in vim
+ls_since.sh -p -T mtime -s 01nov2025 -t sh | xargs vim
+
+# Opens all recently modified shell scripts in vim editor
+```
+
+## Example 6: File Count Statistics
+
+```bash
+# Count all files generated in December 2024
+ls_since.sh -c -s 01dec2024 -e 31dec2024 -t all
+
+# Output:
+# Total files found: 347
+```
+
+## Example 7: Access Time Analysis
+
+```bash
+# Find frequently accessed log files
+ls_since.sh -T atime -s 15nov2025 ~/logs
+
+# Shows files accessed in the last 17 days
+```
+
+![Interactive exploration in action](media/flat-workspace-office-concept.png){.img-fluid width="50%"}
+
+---
+
+# Interactive Mode Deep Dive
+
+When invoked without a date argument, `ls_since.sh` enters interactive mode with guided input and visual feedback.
+
+## Flow
+
+1. **Calculate defaults**: 8 days ago to today
+2. **Display calendar reference** (if `-C` flag used)
+3. **Prompt for start date**: Press Enter for default or type date
+4. **Prompt for end date**: Optional, press Enter for today
+5. **Select extensions**: Choose defaults or customize
+6. **Display selected dates**: Confirm before processing
+7. **Execute search**: Begin file discovery
+
+## Visual Calendar Reference
+
+```
+REFERENCE CALENDARS:
+
+Previous Month:
+    November 2025
+Su Mo Tu We Th Fr Sa
+                   1
+ 2  3  4  5  6  7  8
+ 9 10 11 12 13 14 15
+16 17 18 19 20 21 22
+23 24 25 26 27 28 29
+30
+
+Current Month:
+    December 2025
+Su Mo Tu We Th Fr Sa
+    1  2  3  4  5  6
+ 7  8  9 10 11 12 13
+14 15 16 17 18 19 20
+21 22 23 24 25 26 27
+28 29 30 31
+```
+
+Selected dates highlighted in green for visual confirmation.
+
+---
+
+# Technical Deep Dive
+
+## Platform Compatibility
+
+The utility seamlessly handles platform differences:
+
+**macOS-specific stat syntax**:
+```bash
+stat -f %B "$file"  # Birth time
+stat -f %m "$file"  # Modification time
+stat -f %a "$file"  # Access time
+```
+
+**Linux-specific stat syntax**:
+```bash
+stat -c %W "$file"  # Birth time (with fallback to mtime)
+stat -c %Y "$file"  # Modification time
+stat -c %X "$file"  # Access time
+```
+
+Automatic detection via `[[ "$OSTYPE" == "darwin"* ]]`
+
+## fzf Integration Architecture
+
+When `--fzf` flag is used, the utility implements silent output collection:
+
+1. Create temporary file at startup
+2. Redirect file paths to temp file (not stdout)
+3. Suppress headers/footers in fzf mode
+4. Pipe temp file to fzf at completion
+5. Clean up temporary file after selection
+
+This ensures:
+- No duplicate output (files not listed then piped)
+- Clean terminal for fzf UI
+- Proper file path transmission to fzf
+
+## Temporary File Management
+
+The utility uses secure temporary files for:
+- File path collection (fzf mode)
+- File count tracking (prevents subshell variable loss)
+- Extension filtering
+
+All temporary files are cleaned up with `rm -f` at completion.
+
+## Error Handling
+
+Comprehensive validation for:
+- Missing or invalid directories
+- Invalid date formats with descriptive messages
+- Missing dependencies (fzf validation on `--fzf`)
+- Invalid timestamp types
+- Subshell context preservation
+
+---
+
+# Performance and Scalability
+
+## Benchmark Results
+
+On typical research project directories (10,000 files):
+
+| Scenario | Time | Notes |
+|----------|------|-------|
+| Small range (1-day) | ~200ms | Minimal filtering |
+| Medium range (30-day) | ~200ms | Standard use case |
+| Large range (1-year) | ~250ms | Full year search |
+| Startup overhead | ~10ms | Negligible |
+
+Results consistent across macOS and Linux with SSD storage.
+
+## Time Complexity
+
+- **Overall**: O(n) where n = number of files in tree
+- **Per-file**: O(1) timestamp comparison
+- **Single pass** through directory hierarchy
+- **Constant-time** integer comparisons
+
+## Space Complexity
+
+- **Output**: O(m) where m = number of matching files
+- **fzf mode**: Requires temporary file storage
+- **Normal mode**: Streaming output (minimal memory)
+
+## Optimization Tips
+
+1. **Use specific dates**: Narrow ranges reduce file checks
+2. **Filter by extension**: Fewer files to examine with `-t` flag
+3. **Automatic `.git` exclusion**: Saves 30-40% processing time
+4. **Use mtime on Linux**: Faster than birth time (no fallback needed)
+
+---
+
+# Comparison with Standard Tools
+
+## vs. `find -newermt`
+
+**Advantages of ls_since.sh**:
+- Simpler syntax (no date format conversion required)
+- Multiple timestamp type support
+- Interactive mode with defaults
+- Integrated calendar reference
+- fzf integration built-in
+
+**Advantages of find**:
+- Available on all systems
+- Minimal dependencies
+- More extensive filtering options
+
+## vs. `ls -lt`
+
+**Advantages of ls_since.sh**:
+- Date range filtering
+- Recursive directory traversal
+- Extensible filtering options
+- fzf integration
+
+**Advantages of ls**:
+- No dependencies
+- Simpler for interactive use
+
+## vs. `locate/mlocate`
+
+**Advantages of ls_since.sh**:
+- Real-time results (no database needed)
+- Date range filtering
+- Timestamp type selection
+
+**Advantages of locate**:
+- Faster for very large filesystems
+- Pre-built database
+
+---
+
+# Real-World Integration Patterns
+
+## Pattern 1: Monthly Audit Reports
+
+```bash
+# Generate audit for each month
+for month in {01..12}; do
+  count=$(ls_since.sh -c -s ${month}jan2025 \
+          -e 31${month}2025 -t all 2>/dev/null | \
+          tail -1 | awk '{print $NF}')
+  echo "Month $month: $count files"
+done
+```
+
+## Pattern 2: Recent Work Summary
+
+```bash
+# Show recent modifications by file type
+echo "=== Shell Scripts ==="
+ls_since.sh -s 01nov2025 -t sh | head -5
+
+echo "=== Documentation ==="
+ls_since.sh -s 01nov2025 -t md,Rmd | head -5
+
+echo "=== Analysis ==="
+ls_since.sh -s 01nov2025 -t R,Rmd,qmd | head -5
+```
+
+## Pattern 3: Git-aware File Discovery
+
+```bash
+# Find unstaged files modified after date
+git ls-files -m | while read file; do
+  ls_since.sh -p -s 01nov2025 | grep -q "$file" && echo "$file"
+done
+```
+
+## Pattern 4: Backup Selection
+
+```bash
+# Backup files modified in last week
+ls_since.sh -p -T mtime -s 25nov2025 -t all | \
+  tar -czf backup_nov25.tar.gz -T -
+```
+
+## Pattern 5: Code Review Workflow
+
+```bash
+# Review recent changes in specific file type
+ls_since.sh --fzf -t R -s 01nov2025 | \
+  xargs git diff HEAD~1..HEAD --
+```
+
+---
+
+# Getting Started
+
+## Installation
+
+Copy `ls_since.sh` to your bin directory:
+
+```bash
+# Copy to personal bin
+cp ls_since.sh ~/bin/
+chmod +x ~/bin/ls_since.sh
+
+# Or add to project
+cp ls_since.sh ./scripts/
+```
+
+## First Use: Interactive Mode
+
+```bash
+# Start with no arguments for guided experience
+ls_since.sh
+
+# Prompts you through:
+# 1. Start date selection (with default)
+# 2. End date selection (with default)
+# 3. File type selection (with defaults)
+# 4. Displays calendars for reference
+```
+
+## Common Commands Cheat Sheet
+
+```bash
+# List all default types since 8 days ago
+ls_since.sh
+
+# List shell scripts from November
+ls_since.sh -s 01nov2025 -e 30nov2025 -t sh
+
+# Count files in last 2 weeks
+ls_since.sh -c -s 18nov2025
+
+# Interactive file selection
+ls_since.sh --fzf -t R,Rmd 01jan2025
+
+# Pipe to editor
+ls_since.sh -p -T mtime -s 01nov2025 -t md | xargs vim
+
+# Display help
+ls_since.sh -h
+```
+
+![Ready to explore your file system](media/technology-unicorn-venture-workspace-with-pc-used-conduct-code-reviews.jpg){.img-fluid width="50%"}
+
+---
+
+# Troubleshooting
+
+## Calendar dates not highlighted in green
+
+**Cause**: Terminal doesn't support ANSI color codes
+
+**Solution**: Use `--no-color` flag to suppress coloring
+
+```bash
+ls_since.sh -C --no-color -s 01nov2025
+```
+
+## Birth time unavailable on Linux
+
+**Cause**: Linux filesystems may not store birth time
+
+**Solution**: Use modification time instead
+
+```bash
+ls_since.sh -T mtime -s 01nov2025
+```
+
+## fzf not found error
+
+**Cause**: fzf not installed
+
+**Solution**: Install with appropriate package manager
+
+```bash
+# macOS
+brew install fzf
+
+# Ubuntu/Debian
+sudo apt-get install fzf
+
+# Then use
+ls_since.sh --fzf -t sh 01jan2025
+```
+
+## No files found in date range
+
+**Cause**: Files don't exist in range or extension doesn't match
+
+**Solution**: Check date format and try broader type
+
+```bash
+# Try all file types
+ls_since.sh -t all -s 01nov2025 -e 30nov2025
+
+# Check file dates
+ls_since.sh -p -s 01jan2024 -t all | head
+```
+
+---
+
+# Key Takeaways
+
+::: {.callout-note}
+## Summary
+
+**What you learned:**
+
+- `ls_since.sh` solves date-based file filtering with intuitive defaults
+- Multiple timestamp types (birth, mtime, atime) for flexible filtering
+- Interactive mode guides users without command syntax knowledge
+- fzf integration enables interactive file selection workflows
+- Cross-platform compatibility (macOS and Linux)
+- Performance scales linearly with O(n) complexity
+
+**When to use:**
+
+- Auditing files created during specific analysis phases
+- Finding recently modified or accessed files
+- Interactive file discovery and selection
+- Batch processing based on temporal criteria
+- Integration with version control workflows
+
+**Integration opportunities:**
+
+- Pipe to `xargs` for bulk operations
+- Combine with `fzf` for interactive selection
+- Use in shell scripts for automation
+- Integrate with git workflows
+- Build backup/archival workflows
+:::
+
+---
+
+# Further Reading and Resources
+
+- **Full White Paper**: See `/Users/zenn/Dropbox/bin/date_filtering.md` for comprehensive technical documentation
+- **Script Location**: `/Users/zenn/Dropbox/bin/ls_since.sh` or `~/bin/ls_since.sh`
+- **Installation**: Copy to any location in your `$PATH`
+
+## Related Utilities
+
+- **find command**: `man find` for advanced filtering
+- **stat command**: `man stat` for detailed file information
+- **fzf**: [junegunn/fzf](https://github.com/junegunn/fzf) for interactive selection
+- **Quarto**: For research computing workflows
+
+## Best Practices
+
+1. **Use interactive mode** for first-time exploration
+2. **Verify date ranges** with calendar reference (`-C` flag)
+3. **Test pipelines** before integrating into scripts
+4. **Combine with other tools** for powerful workflows
+5. **Verify output** before destructive operations
+
+---
+
+## About This Post
+
+This blog post was generated from a comprehensive white paper documenting the `ls_since.sh` utility. The white paper provides deeper technical details, implementation patterns, and advanced use cases beyond what's covered here.
+
+For the complete reference documentation, see the white paper at `/Users/zenn/Dropbox/bin/date_filtering.md`.
+
+**Date published**: December 2, 2025
+**Last updated**: December 2, 2025

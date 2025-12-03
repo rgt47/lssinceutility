@@ -1,0 +1,46 @@
+# Quarto rendered output (regenerated from source)
+*.html
+*_files/
+_freeze/
+
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# renv artifacts
+renv/library/
+renv/python/
+renv/activate.R
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# Large media files (use Git LFS)
+*.mp4
+*.mp3
+*.mov
+*.avi
+
+# Do NOT ignore symlinks - they're part of the structure
+!index.qmd
+!figures
+!media
+!data
