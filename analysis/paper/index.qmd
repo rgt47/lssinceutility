@@ -664,6 +664,116 @@ ls_since.sh -p -s 01jan2024 -t all | head
 
 ---
 
+# Appendix: Date Range Filtering with `find`
+
+## Using Standard Unix Tools for Similar Functionality
+
+While `ls_since.sh` provides an intuitive, feature-rich interface, the same date-range filtering can be accomplished using the standard `find` command available on all Unix/Linux systems. This appendix demonstrates how to replicate the core functionality using only built-in tools.
+
+## Enhanced `find` Command for Rmd Files with Date Range
+
+```bash
+find . -type f -name "*.Rmd" -newermt "2025-11-01" ! -newermt "2025-12-01" \
+  -printf '%T@ %TY-%Tm-%Td %TH:%TM:%.2TS %p\n' | \
+  sort -rn | \
+  cut -d' ' -f4- | \
+  fzf --preview 'head -20 {}'
+```
+
+## Command Breakdown
+
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| `find .` | Search current directory | Change `.` to specify different directory |
+| `-type f` | Only regular files | Excludes directories and symlinks |
+| `-name "*.Rmd"` | Filter by file extension | Change extension pattern as needed |
+| `-newermt "2025-11-01"` | Start date (inclusive) | Files modified after this date |
+| `! -newermt "2025-12-01"` | End date (exclusive) | Files NOT modified on/after this date |
+| `-printf '%T@ %TY-%Tm-%Td %TH:%TM:%.2TS %p\n'` | Format output with timestamp | Shows: epoch, ISO date, time, filepath |
+| `sort -rn` | Sort by timestamp, newest first | `-rn` = reverse numeric sort |
+| `cut -d' ' -f4-` | Extract readable date and path | Removes epoch timestamp for cleaner output |
+| `fzf --preview 'head -20 {}'` | Interactive file selection | Preview shows first 20 lines of file |
+
+## Practical Usage Examples
+
+**Find and edit Rmd files from November in your research directory:**
+```bash
+find ~/research -type f -name "*.Rmd" -newermt "2025-11-01" ! -newermt "2025-12-01" | \
+  fzf | xargs vim
+```
+
+**Select and copy multiple files to backup:**
+```bash
+find . -type f -name "*.Rmd" -newermt "2025-11-15" ! -newermt "2025-11-30" | \
+  fzf -m | xargs -I {} cp {} ~/backup/
+```
+
+**Preview analysis files before processing:**
+```bash
+find ~/analysis -type f -name "*.Rmd" -newermt "2025-11-01" ! -newermt "2025-12-01" | \
+  fzf --preview 'wc -l {}; head -30 {}'
+```
+
+## Advantages and Trade-offs
+
+**Advantages of `find`:**
+- No additional dependencies (built into all Unix/Linux systems)
+- Powerful filtering options (combine multiple conditions)
+- Direct pipeline to other commands
+- Excellent for scripting and automation
+- Consistent behavior across platforms
+
+**Advantages of `ls_since.sh`:**
+- Friendlier date format (`01nov2025` vs `2025-11-01`)
+- Interactive mode with sensible defaults
+- Calendar reference visualization
+- Built-in extension presets
+- Cleaner error messages and help text
+- Optimized for human interaction
+
+**When to use `find`:**
+- Scripts and automation workflows
+- Systems without `ls_since.sh` installed
+- Complex filtering combining multiple file attributes
+- Batch operations on large file sets
+
+**When to use `ls_since.sh`:**
+- Interactive exploration and discovery
+- One-off searches without remembering syntax
+- Research projects requiring date range audits
+- Workflows with multiple file type categories
+
+## Creating a Reusable Function
+
+Add this to your `.zshrc` or `.bashrc` for a convenient wrapper:
+
+```bash
+find_rmd_range() {
+  local start_date="${1:-2025-11-01}"
+  local end_date="${2:-2025-12-01}"
+  local directory="${3:-.}"
+
+  find "$directory" -type f -name "*.Rmd" \
+    -newermt "$start_date" ! -newermt "$end_date" \
+    -printf '%T@ %TY-%Tm-%Td %TH:%TM:%.2TS %p\n' | \
+    sort -rn | \
+    cut -d' ' -f4- | \
+    fzf --preview 'head -20 {}' \
+        --header "Rmd files: $start_date to $end_date"
+}
+
+# Usage examples:
+# find_rmd_range "2025-11-01" "2025-11-30" ~/analysis
+# find_rmd_range "2025-10-01" "2025-12-31"              # Current directory
+# find_rmd_range                                        # Uses defaults
+```
+
+## Key Takeaway
+
+The `find` command demonstrates that date-based file filtering doesn't require specialized tools—standard Unix utilities can accomplish the same results. The choice between `find` and `ls_since.sh` depends on your workflow: use `find` for scripting and edge cases, and `ls_since.sh` for interactive exploration and human-friendly defaults.
+
+---
+
 ## About This Post
 
 This blog post was generated from a comprehensive white paper documenting the `ls_since.sh` utility. The white paper provides deeper technical details, implementation patterns, and advanced use cases beyond what's covered here.
