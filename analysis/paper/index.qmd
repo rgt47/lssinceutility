@@ -14,7 +14,7 @@ tags:
 description: "Discover how ls_since.sh simplifies date-based file filtering with interactive modes, flexible timestamp selection, and seamless fzf integration—a modern solution for research computing workflows."
 image: "media/images/ls_since_hero.png"
 document-type: "blog"
-draft: false
+draft: true
 execute:
   echo: true
   warning: false

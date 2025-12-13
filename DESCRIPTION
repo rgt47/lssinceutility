@@ -1,9 +1,9 @@
-Package: ls_since_blog
-Title: Blog Post - ls_since.sh Utility
+Package: lssinceblog
+Title: Blog Post - lssince.sh Utility
 Version: 0.0.1
 Author: Your Name
 Maintainer: Your Name <your.email@example.com>
-Description: Reproducible blog post about ls_since.sh, an advanced file date filtering utility for research computing.
+Description: Reproducible blog post about lssince.sh, an advanced file date filtering utility for research computing.
 License: GPL-3
 Depends:
     R (>= 4.0.0)
