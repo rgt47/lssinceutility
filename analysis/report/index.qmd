@@ -1,0 +1,11 @@
+---
+title: "The ls --since Utility"
+author: "Ronald 'Ryy' G. Thomas"
+date: "2025-01-01"
+categories: [shell, linux]
+description: "ARCHIVED 2026-04-27: this post was a placeholder. The `lssince` script is documented operationally in posts 49 (zzgit) and 52 (workflow construct, shell-scripts row). See those posts instead."
+document-type: "blog"
+draft: true
+---
+
+Placeholder.
